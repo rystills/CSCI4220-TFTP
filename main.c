@@ -11,6 +11,7 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <sys/select.h>
+#include <errno.h>
 
 #define MAXLINE 4096
 
@@ -49,11 +50,13 @@ int main(int argc, char **argv) {
         exit(EXIT_FAILURE); 
     } 
 
-    printf("%d\n",getsockname(sockfd,(const struct sockaddr *)&servaddr,0));
+    //check sin_port
+    socklen_t s = sizeof(servaddr);
+    getsockname(sockfd,(struct sockaddr *)&servaddr,&s);
+	unsigned int port = ntohs(servaddr.sin_port);
+    printf("port is: %d\n",port);
+	fflush(stdout);
       
-    //printf(getsockname(sockfd,servaddr,));
-    //fflush(stdout);
-
     socklen_t len, n; 
     n = recvfrom(sockfd, (char *)buffer, MAXLINE, MSG_WAITALL, ( struct sockaddr *) &cliaddr, &len); 
     buffer[n] = '\0'; 
