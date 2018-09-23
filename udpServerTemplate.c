@@ -1,4 +1,3 @@
-
 // Server side implementation of UDP client-server model 
 #include <stdio.h> 
 #include <stdlib.h> 
@@ -38,7 +37,7 @@ int main() {
         perror("bind failed"); 
         exit(EXIT_FAILURE); 
     } 
-      
+
     socklen_t len, n; 
     n = recvfrom(sockfd, (char *)buffer, MAXLINE, MSG_WAITALL, ( struct sockaddr *) &cliaddr, &len); 
     buffer[n] = '\0'; 
