@@ -65,53 +65,45 @@ void printPacket(const char* buffer, size_t len)
 }
 
 int main(int argc, char **argv) { 
-	int sockfd; 
-	char buffer[MAXLINE]; 
-	struct sockaddr_in servaddr, cliaddr; 
-	  
+	int sockfd;
+	struct sockaddr_in servaddr, cliaddr;
+	socklen_t s = sizeof(servaddr);
+	char buffer[MAXLINE];
+	
 	//init socket 
-	if ( (sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0 ) exitError("unable to create socket"); 
+	if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
+		exitError("unable to create socket"); 
 	
 	//init server and client sockets
-	memset(&servaddr, 0, sizeof(servaddr)); 
-	memset(&cliaddr, 0, sizeof(cliaddr)); 
-	  
-	//assign server properties 
+	memset(&servaddr, 0, s);
+	memset(&cliaddr, 0, sizeof cliaddr);
+
+	//assign server properties
 	servaddr.sin_family = AF_INET;
-	servaddr.sin_addr.s_addr = INADDR_ANY; 
-	servaddr.sin_port = 0; 
-	  
-	//bind the socket with the server address 
-	if ( bind(sockfd, (const struct sockaddr *)&servaddr,  sizeof(servaddr)) < 0 ) exitError("unable to bind socket");
+	servaddr.sin_addr.s_addr = INADDR_ANY;
+	servaddr.sin_port = 0;
+	
+	//bind the socket with the server address
+	if (bind(sockfd, (const struct sockaddr *) &servaddr, s) < 0)
+		exitError("unable to bind socket");
 
 	//check/get sin_port
-	socklen_t s = sizeof(servaddr);
-	getsockname(sockfd,(struct sockaddr *)&servaddr,&s);
-	unsigned int port = ntohs(servaddr.sin_port);
-	printf("port is: %d\n",port);
+	getsockname(sockfd, (struct sockaddr *) &servaddr,&s);
+	printf("port is: %d\n", ntohs(servaddr.sin_port));
 	fflush(stdout);
-	
-	//handle messages
-	/*socklen_t len, n; 
-	n = recvfrom(sockfd, (char *)buffer, MAXLINE, MSG_WAITALL, ( struct sockaddr *) &cliaddr, &len); 
-	buffer[n] = '\0'; 
-	printf("Client : %s\n", buffer); 
-	sendto(sockfd, (const char *)hello, strlen(hello), MSG_CONFIRM, (const struct sockaddr *) &cliaddr, len); 
-	printf("Hello message sent.\n");*/
-	  
+
 	//main server loop
 	//temp value; replace this bool with forking later
 	bool midRequest = false;
 	int lastWrittenBlock = 0;
 	char fileName[MAXLINE];
 	for (;;) {
-		socklen_t len, n;
-		n = recvfrom(sockfd, (char *)buffer, MAXLINE, MSG_WAITALL, ( struct sockaddr *) &cliaddr, &len); 
-		buffer[n] = '\0'; 
+		socklen_t len = sizeof (struct sockaddr_in);
+		printf("len: %d\n", len);
+		socklen_t n = recvfrom(sockfd, buffer, MAXLINE, MSG_WAITALL, (struct sockaddr *) &cliaddr, &len);
+		printf("len: %d\n", len);
 		printf("Client sent this message: ");
 		printPacket(buffer, n);
-		printf("\n");
-		printf("message size is: %d\n",n);
 		//write filename to variable
 		if (!midRequest) {
 			strcpy(fileName, buffer+2);
@@ -121,15 +113,12 @@ int main(int argc, char **argv) {
 		if (buffer[1] == 2) {
 			//write request
 			if (!midRequest) {
-			 	//send back initial ACK
-				buffer[1] = 4;
-				buffer[2] = 0;
-				buffer[3] = 0;
-				int sendVal = sendto(sockfd, buffer, 4, MSG_CONFIRM, (const struct sockaddr *) &cliaddr, len);
-				if (sendVal == -1) {
+				//send back initial ACK
+				char initialAck[4] = {0,4,0,0};
+				printf("len: %d\n", len);
+				if (sendto(sockfd, initialAck, 4, 0, (const struct sockaddr *) &cliaddr, len) == -1)
 					printf("Error sending: %s\n", strerror(errno));
-				}
-			} 
+			}
 			else {
 				//write data
 				//make sure block # is correct
@@ -150,7 +139,7 @@ int main(int argc, char **argv) {
 			//read request
 		}
 		else {
-			//we should not receieve anything else
+			//we should not recieve anything else
 		}
 		midRequest = true;
 	}
