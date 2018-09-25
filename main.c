@@ -70,6 +70,10 @@ int main(int argc, char **argv) {
     printf("Hello message sent.\n");*/
       
 	//main server loop
+	//temp value; replace this bool with forking later
+	bool midRequest = false;
+	int lastWrittenBlock = 0;
+	char fileName[MAXLINE];
 	for (;;) {
 		socklen_t len, n;
 		 n = recvfrom(sockfd, (char *)buffer, MAXLINE, MSG_WAITALL, ( struct sockaddr *) &cliaddr, &len); 
@@ -80,14 +84,33 @@ int main(int argc, char **argv) {
 		 } 
 		 printf("\n");
 		 printf("message size is: %d\n",n);
-		 
+		 //write filename to variable
+		 if (!midRequest) {
+		 	for (int i = 2;;++i) {
+		 		fileName[i-2] = buffer[i];
+		 		if (buffer[i] == '\0') break;
+		 	}
+		 }
 		 if (buffer[1] == 2) {
 		 	//write request
-		 	buffer[1] = 4;
-		 	buffer[2] = 0;
-		 	buffer[3] = 0;
-		 	buffer[4] = '\n';
-		 	sendto(sockfd, buffer, 5, MSG_CONFIRM, (const struct sockaddr *) &cliaddr, len); 
+		 	if (!midRequest) {
+			 	//send back initial ACK
+			 	buffer[1] = 4;
+			 	buffer[2] = 0;
+			 	buffer[3] = 0;
+			 	buffer[4] = '\n';
+			 	sendto(sockfd, buffer, 5, MSG_CONFIRM, (const struct sockaddr *) &cliaddr, len);
+		 	} 
+		 	else {
+		 		//write data
+		 		//make sure block # is correct
+		 		if (buffer[3] == lastWrittenBlock + 1) {
+		 			//we haven't written yet
+		 		}
+		 		else {
+		 			//we've already written this block; error?
+		 		}
+		 	}
 		 }
 		 else if (buffer[1] == 1) {
 		 	buffer[1] = 4;
@@ -98,8 +121,9 @@ int main(int argc, char **argv) {
 		 	//read request
 		 }
 		 else {
-		 	//we should not receieve anything else yet
+		 	//we should not receieve anything else
 		 }
+		 midRequest = true;
 	}
 
     return 0; 
