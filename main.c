@@ -28,6 +28,8 @@ void sendPacket(const char* packet, int len)
 	lastMessageLen = len;
 	if (sendto(sockfd, packet, len, 0, (const struct sockaddr *) &cliaddr, sizeof (struct sockaddr_in)) == -1)
 		printf("Error sending: %s\n", strerror(errno));
+	//reset the timeout alarm cooldown for 1 second
+	alarm(1);
 }
 
 void sig_timeout(int signo) {
@@ -36,7 +38,7 @@ void sig_timeout(int signo) {
 		//close(3);
 		exit(EXIT_FAILURE);
 	}
-	//resend the last message
+	//resend the last message (this also refreshes the alarm cooldown)
 	sendPacket(lastMessage, lastMessageLen);
 }
 
@@ -116,6 +118,8 @@ void sendAck(int blockNumber)
 	if (sendto(sockfd, ack, 4, 0, (const struct sockaddr *) &cliaddr, sizeof (struct sockaddr_in)) == -1)
 		printf("Error sending: %s\n", strerror(errno));
 	strncpy(lastMessage,ack,4);
+	//reset the timeout alarm cooldown for 1 second
+	alarm(1);
 }
 
 void makeData(char* packet, int blockNumber)
@@ -149,6 +153,8 @@ void handleWrite(const char* fileName)
 		}
 	} while (n < 512);
 	close(sockfd);
+	//turn off the timeout alarm
+	alarm(0);
 	exit (0);
 }
 
@@ -182,10 +188,13 @@ void handleRead(const char* fileName)
 	}
 
 	close(sockfd);
+	//turn off the timeout alarm
+	alarm(0);
 	exit(0);
 }
 
 int main(int argc, char **argv) { 
+	signal(SIGALRM, sig_timeout);
 	sockfd = initSocket();
 	char buffer[MAXLINE];
 	
