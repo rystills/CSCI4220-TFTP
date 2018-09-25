@@ -145,7 +145,6 @@ void handleWrite(const char* fileName, struct sockaddr_in* cliaddr)
 {
 	globCliAddr = cliaddr;
 	char buffer[MAXLINE];
-	int sockfd;
 	int sockfd = initSocket();
 	globSockfd = sockfd;
 
@@ -191,7 +190,6 @@ void handleRead(const char* fileName, struct sockaddr_in* cliaddr)
 
 	FILE* file = fopen(fileName, "rb");
 	size_t num_read = 512;
-	int blockNumber = 1;
 	for (int blockNumber = 1; num_read == 512; receiveAck(blockNumber++, sockfd, cliaddr))
 	{
 		// Read up to 512 bytes from file and then send to client
