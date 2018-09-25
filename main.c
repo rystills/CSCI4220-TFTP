@@ -87,11 +87,9 @@ int main(int argc, char **argv) {
 		 printf("message size is: %d\n",n);
 		 //write filename to variable
 		 if (!midRequest) {
-		 	for (int i = 2;;++i) {
-		 		fileName[i-2] = buffer[i];
-		 		if (buffer[i] == '\0') break;
-		 	}
+		 	strcpy(fileName, buffer+2);
 		 }
+		 printf("filename: %s\n",fileName);
 		 if (buffer[1] == 2) {
 		 	//write request
 		 	if (!midRequest) {
