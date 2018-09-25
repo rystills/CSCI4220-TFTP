@@ -15,54 +15,64 @@
 
 #define MAXLINE 4096
 
+/**
+child handler (written in lab) 
+@param signo: child signal
+**/
 void sig_child(int signo) {
 	pid_t pid;
 	int stat;
+	while( (pid = waitpid(-1,&stat,WNOHANG)) >0) printf("Parent sees CHILD PID %d has terminated.\n",pid);	
+}
 
-	while( (pid = waitpid(-1,&stat,WNOHANG)) >0) {
-		printf("Parent sees CHILD PID %d has terminated.\n",pid);	
-	}
+/**
+exit with an error message
+@param str: the error string to display
+**/
+void exitError(char* str) {
+	perror(str); 
+    exit(EXIT_FAILURE); 
 }
 
 int main(int argc, char **argv) { 
     int sockfd; 
     char buffer[MAXLINE]; 
-    char const *hello = "Hello from server"; 
     struct sockaddr_in servaddr, cliaddr; 
       
-    // Creating socket file descriptor 
-    if ( (sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0 ) { 
-        perror("socket creation failed"); 
-        exit(EXIT_FAILURE); 
-    } 
-      
+    //init socket 
+    if ( (sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0 ) exitError("unable to create socket"); 
+    
+    //init server and client sockets
     memset(&servaddr, 0, sizeof(servaddr)); 
     memset(&cliaddr, 0, sizeof(cliaddr)); 
       
-    // Filling server information 
-    servaddr.sin_family = AF_INET; // IPv4 
+    //assign server properties 
+    servaddr.sin_family = AF_INET;
     servaddr.sin_addr.s_addr = INADDR_ANY; 
     servaddr.sin_port = 0; 
       
-    // Bind the socket with the server address 
-    if ( bind(sockfd, (const struct sockaddr *)&servaddr,  sizeof(servaddr)) < 0 ) { 
-        perror("bind failed"); 
-        exit(EXIT_FAILURE); 
-    } 
+    //bind the socket with the server address 
+    if ( bind(sockfd, (const struct sockaddr *)&servaddr,  sizeof(servaddr)) < 0 ) exitError("unable to bind socket");
 
-    //check sin_port
+    //check/get sin_port
     socklen_t s = sizeof(servaddr);
     getsockname(sockfd,(struct sockaddr *)&servaddr,&s);
 	unsigned int port = ntohs(servaddr.sin_port);
     printf("port is: %d\n",port);
 	fflush(stdout);
-      
-    socklen_t len, n; 
+    
+    //handle messages
+    /*socklen_t len, n; 
     n = recvfrom(sockfd, (char *)buffer, MAXLINE, MSG_WAITALL, ( struct sockaddr *) &cliaddr, &len); 
     buffer[n] = '\0'; 
     printf("Client : %s\n", buffer); 
     sendto(sockfd, (const char *)hello, strlen(hello), MSG_CONFIRM, (const struct sockaddr *) &cliaddr, len); 
-    printf("Hello message sent.\n");  
+    printf("Hello message sent.\n");*/
       
+	//main server loop
+	for (;;) {
+		
+	}
+
     return 0; 
 }
