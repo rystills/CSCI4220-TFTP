@@ -71,7 +71,10 @@ int main(int argc, char **argv) {
       
 	//main server loop
 	for (;;) {
-		
+		socklen_t len, n;
+		 n = recvfrom(sockfd, (char *)buffer, MAXLINE, MSG_WAITALL, ( struct sockaddr *) &cliaddr, &len); 
+		 buffer[n] = '\0'; 
+		 printf("Client : %s\n", buffer); 
 	}
 
     return 0; 
