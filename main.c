@@ -106,6 +106,7 @@ int main(int argc, char **argv) {
 	char fileName[MAXLINE];
 	for (;;) {
 		socklen_t len, n;
+		len = sizeof(cliaddr);
 		n = recvfrom(sockfd, (char *)buffer, MAXLINE, MSG_WAITALL, ( struct sockaddr *) &cliaddr, &len); 
 		buffer[n] = '\0'; 
 		printf("Client sent this message: ");
@@ -125,7 +126,8 @@ int main(int argc, char **argv) {
 				buffer[1] = 4;
 				buffer[2] = 0;
 				buffer[3] = 0;
-				int sendVal = sendto(sockfd, buffer, 4, MSG_CONFIRM, (const struct sockaddr *) &cliaddr, len);
+				
+				int sendVal = sendto(sockfd, buffer, 4, 0, (const struct sockaddr *) &cliaddr, len);
 				if (sendVal == -1) {
 					printf("Error sending: %s\n", strerror(errno));
 				}
@@ -135,6 +137,21 @@ int main(int argc, char **argv) {
 				//make sure block # is correct
 				if (buffer[3] == lastWrittenBlock + 1) {
 					//we haven't written yet
+					//simulate write with terminal output
+					printf("writing: ");
+					for (int i = 4; buffer[i] != 0; printf("%s",strchr(&buffer[i],0)),++i);
+					printf("\n");
+					++lastWrittenBlock;
+
+					//send an ACK
+					buffer[1] = 4;
+					buffer[2] = 0;
+					buffer[3] = lastWrittenBlock;
+					
+					int sendVal = sendto(sockfd, buffer, 4, 0, (const struct sockaddr *) &cliaddr, len);
+					if (sendVal == -1) {
+						printf("Error sending: %s\n", strerror(errno));
+					}
 				}
 				else {
 					//we've already written this block; error?
