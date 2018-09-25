@@ -21,7 +21,12 @@ int numResends = 0;
 char lastMessage[MAXLINE];
 
 void sig_timeout(int signo) {
-
+	if (++numResends == 10) {
+		//we've timed out! cleanup and leave
+		//close(3);
+		exit(EXIT_FAILURE);
+	}
+	//resend the last message
 }
 
 /**
@@ -120,7 +125,7 @@ void handleWrite(const char* fileName, struct sockaddr_in* cliaddr)
 {
 	char buffer[MAXLINE];
 	int sockfd;
-	initSocket(&sockfd);
+	int sockfd = initSocket();
 
 	//send back initial ACK
 	sendAck(0, sockfd, cliaddr);
