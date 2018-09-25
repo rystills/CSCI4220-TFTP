@@ -83,13 +83,13 @@ void printPacket(const char* buffer, size_t len)
 			printf("WRQ|%s|%s\n", buffer+2, strchr(buffer+2, 0)+1);
 			break;
 		case 3:
-			printf("DATA|%d|%.*s\n", buffer[3], (int) len-4, buffer+4);
+			printf("DATA|%d|%.*s\n", buffer[3] | (unsigned int)buffer[2]<<8, (int) len-4, buffer+4);
 			break;
 		case 4:
-			printf("ACK|%d\n", buffer[3]);
+			printf("ACK|%d\n", buffer[3] | (unsigned int)buffer[2]<<8);
 			break;
 		case 5:
-			printf("ERROR|%d|%s\n", buffer[3], buffer+4);
+			printf("ERROR|%d|%s\n", buffer[3] | (unsigned int)buffer[2]<<8, buffer+4);
 			break;
 		default:
 			printf("Invalid packet\n");
@@ -126,10 +126,10 @@ int initSocket()
 	return sockfd;
 }
 
-void sendAck(int blockNumber)
+void sendAck(unsigned int blockNumber)
 {
 	lastMessageLen = 4;
-	printf("Sending ACK %d\n", blockNumber);
+	printf("Sending ACK %u\n", blockNumber);
 	char ack[4] = {0,4,0,blockNumber};
 	if (sendto(sockfd, ack, 4, 0, (const struct sockaddr *) &cliaddr, sizeof (struct sockaddr_in)) == -1)
 		printf("Error sending: %s\n", strerror(errno));
@@ -155,7 +155,7 @@ void handleWrite(const char* fileName)
 	//send back initial ACK
 	sendAck(0);
 
-	int currBlock = 1;
+	unsigned int currBlock = 1;
 	socklen_t n;
 	do
 	{
@@ -164,14 +164,9 @@ void handleWrite(const char* fileName)
 		printf("n: %d\n",n);
 		fflush(stdout);
 		printPacket(buffer, n);
-		sendAck(buffer[3]);
-		//todo: handle ACK/BLOCK# in buffer[2:3] correctly, rather than assuming small BLOCK# stored entirely in buffer[3]
-		if (buffer[2]!=0) {
-			printf("ACK IS NOW STORED IN [2] AS WELL!\n");
-			fflush(stdout);
-			exit(1);
-		}
-		if (buffer[3] == currBlock)
+		sendAck((unsigned int)buffer[3] | (unsigned int)buffer[2]<<8);
+		printf("current ack is %u\n",(unsigned int)buffer[3] | (unsigned int)buffer[2]<<8);
+		if (buffer[3] | (unsigned int)buffer[2]<<8 == currBlock)
 		{
 			printf("writing: %s\n",buffer+4);
 			++currBlock;
