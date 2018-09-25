@@ -12,6 +12,7 @@
 #include <netinet/in.h>
 #include <sys/select.h>
 #include <errno.h>
+#include <stdbool.h>
 
 #define MAXLINE 1024
 
