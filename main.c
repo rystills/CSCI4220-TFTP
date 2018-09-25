@@ -89,12 +89,25 @@ void initSocket(int* sockfd, struct sockaddr_in * servaddr)
 	fflush(stdout);
 }
 
-void sendAck(int blockNumber, int sockfd, struct sockaddr_in * cliaddr)
+void sendAck(int blockNumber, int sockfd, struct sockaddr_in* cliaddr)
 {
 	printf("Sending ACK %d\n", blockNumber);
-	//printf("Family=%d,AF_INET=%d\n", cliaddr -> sin_family, AF_INET);
 	char ack[4] = {0,4,0,blockNumber};
 	if (sendto(sockfd, ack, 4, 0, (const struct sockaddr *) cliaddr, sizeof (struct sockaddr_in)) == -1)
+		printf("Error sending: %s\n", strerror(errno));
+}
+
+void sendData(const char* data, int len, int blockNumber, int sockfd, struct sockaddr_in* cliaddr)
+{
+	printf("Sending DATA %d (len %d)\n", blockNumber, len);
+	char packet[len+4];
+	packet[0] = 0;
+	packet[1] = 3;
+	packet[2] = 0;
+	packet[3] = blockNumber;
+	memcpy(packet+4, data, len);
+
+	if (sendto(sockfd, packet, len+4, 0, (const struct sockaddr *) cliaddr, sizeof (struct sockaddr_in)) == -1)
 		printf("Error sending: %s\n", strerror(errno));
 }
 
@@ -133,7 +146,15 @@ void handleRead(const char* fileName, struct sockaddr_in* cliaddr)
 	struct sockaddr_in servaddr;
 	initSocket(&sockfd, &servaddr);
 
-	// TODO Implement
+	FILE* file = fopen(fileName, "rb");
+	char data[512];
+	size_t num_read;
+	int blockNumber = 1;
+	do
+	{
+		num_read = fread(data, sizeof(char), 512, file);
+		sendData(data, num_read, blockNumber++, sockfd, cliaddr);
+	} while (num_read == 512);
 
 	close(sockfd);
 	exit(0);
