@@ -19,6 +19,9 @@
 //globals (for signal use)
 int numResends = 0;
 char lastMessage[MAXLINE];
+struct sockaddr_in* globCliAddr;
+int globSockfd;
+int lastMessageLen;
 
 void sig_timeout(int signo) {
 	if (++numResends == 10) {
@@ -99,6 +102,7 @@ int initSocket()
 
 void sendAck(int blockNumber, int sockfd, struct sockaddr_in* cliaddr)
 {
+	lastMessageLen = 4;
 	printf("Sending ACK %d\n", blockNumber);
 	char ack[4] = {0,4,0,blockNumber};
 	if (sendto(sockfd, ack, 4, 0, (const struct sockaddr *) cliaddr, sizeof (struct sockaddr_in)) == -1)
@@ -116,6 +120,7 @@ void makeData(char* packet, int blockNumber)
 
 void sendData(const char* data, int len, int blockNumber, int sockfd, struct sockaddr_in* cliaddr)
 {
+	lastMessageLen = len;
 	printf("Sending DATA %d (len %d)\n", blockNumber, len);
 	char packet[len+4];
 	packet[0] = 0;
@@ -131,15 +136,18 @@ void sendData(const char* data, int len, int blockNumber, int sockfd, struct soc
 
 void sendPacket(const char* packet, int len, int sockfd, struct sockaddr_in* cliaddr)
 {
+	lastMessageLen = len;
 	if (sendto(sockfd, packet, len, 0, (const struct sockaddr *) cliaddr, sizeof (struct sockaddr_in)) == -1)
 		printf("Error sending: %s\n", strerror(errno));
 }
 
 void handleWrite(const char* fileName, struct sockaddr_in* cliaddr)
 {
+	globCliAddr = cliaddr;
 	char buffer[MAXLINE];
 	int sockfd;
 	int sockfd = initSocket();
+	globSockfd = sockfd;
 
 	//send back initial ACK
 	sendAck(0, sockfd, cliaddr);
@@ -176,8 +184,10 @@ void receiveAck(int blockNumber, int sockfd, struct sockaddr_in* cliaddr)
 
 void handleRead(const char* fileName, struct sockaddr_in* cliaddr)
 {
+	globCliAddr = cliaddr;
 	char buffer[MAXLINE];
 	int sockfd = initSocket();
+	globSockfd = sockfd;
 
 	FILE* file = fopen(fileName, "rb");
 	size_t num_read = 512;
