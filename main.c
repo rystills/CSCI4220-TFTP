@@ -13,7 +13,7 @@
 #include <sys/select.h>
 #include <errno.h>
 
-#define MAXLINE 4096
+#define MAXLINE 1024
 
 /**
 child handler (written in lab) 
@@ -74,7 +74,32 @@ int main(int argc, char **argv) {
 		socklen_t len, n;
 		 n = recvfrom(sockfd, (char *)buffer, MAXLINE, MSG_WAITALL, ( struct sockaddr *) &cliaddr, &len); 
 		 buffer[n] = '\0'; 
-		 printf("Client : %s\n", buffer); 
+		 printf("Client sent this message: ");
+		 for (int i = 0; i < n; ++i) {
+		 	printf("%d,",buffer[i]);
+		 } 
+		 printf("\n");
+		 printf("message size is: %d\n",n);
+		 
+		 if (buffer[1] == 2) {
+		 	//write request
+		 	buffer[1] = 4;
+		 	buffer[2] = 0;
+		 	buffer[3] = 0;
+		 	buffer[4] = '\n';
+		 	sendto(sockfd, buffer, 5, MSG_CONFIRM, (const struct sockaddr *) &cliaddr, len); 
+		 }
+		 else if (buffer[1] == 1) {
+		 	buffer[1] = 4;
+		 	buffer[2] = 0;
+		 	buffer[3] = 1;
+		 	buffer[4] = '\n';
+		 	//sendto(sockfd,(;
+		 	//read request
+		 }
+		 else {
+		 	//we should not receieve anything else yet
+		 }
 	}
 
     return 0; 
