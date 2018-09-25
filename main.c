@@ -36,6 +36,8 @@ void sig_timeout(int signo) {
 	if (++numResends == 10) {
 		//we've timed out! cleanup and leave
 		//close(3);
+		printf("Timed out, resends done\n");
+		fflush(stdout);
 		exit(EXIT_FAILURE);
 	}
 	//resend the last message (this also refreshes the alarm cooldown)
@@ -168,6 +170,7 @@ void receiveAck(int blockNumber)
 		recvfrom(sockfd, data, 4, MSG_WAITALL, (struct sockaddr *) &cliaddr, &len);
 	}
 	while (data[1] != 4 || data[3] != blockNumber);
+	alarm(0);
 }
 
 void handleRead(const char* fileName)
