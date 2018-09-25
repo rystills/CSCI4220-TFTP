@@ -165,12 +165,18 @@ void handleWrite(const char* fileName)
 		fflush(stdout);
 		printPacket(buffer, n);
 		sendAck(buffer[3]);
+		//todo: handle ACK/BLOCK# in buffer[2:3] correctly, rather than assuming small BLOCK# stored entirely in buffer[3]
+		if (buffer[2]!=0) {
+			printf("ACK IS NOW STORED IN [2] AS WELL!\n");
+			fflush(stdout);
+			exit(1);
+		}
 		if (buffer[3] == currBlock)
 		{
 			printf("writing: %s\n",buffer+4);
 			++currBlock;
 		}
-	} while (n < 512);
+	} while (n >= 516);
 	close(sockfd);
 	//turn off the timeout alarm
 	alarm(0);
