@@ -16,14 +16,12 @@
 
 #define MAXLINE 1024
 
-/**
-child handler (written in lab) 
-@param signo: child signal
-**/
-void sig_child(int signo) {
-	pid_t pid;
-	int stat;
-	while( (pid = waitpid(-1,&stat,WNOHANG)) >0) printf("Parent sees CHILD PID %d has terminated.\n",pid);	
+//globals (for signal use)
+int numResends = 0;
+char lastMessage[MAXLINE];
+
+void sig_timeout(int signo) {
+
 }
 
 /**
@@ -100,6 +98,7 @@ void sendAck(int blockNumber, int sockfd, struct sockaddr_in* cliaddr)
 	char ack[4] = {0,4,0,blockNumber};
 	if (sendto(sockfd, ack, 4, 0, (const struct sockaddr *) cliaddr, sizeof (struct sockaddr_in)) == -1)
 		printf("Error sending: %s\n", strerror(errno));
+	strncpy(lastMessage,ack,4);
 }
 
 void sendData(const char* data, int len, int blockNumber, int sockfd, struct sockaddr_in* cliaddr)
@@ -114,6 +113,7 @@ void sendData(const char* data, int len, int blockNumber, int sockfd, struct soc
 
 	if (sendto(sockfd, packet, len+4, 0, (const struct sockaddr *) cliaddr, sizeof (struct sockaddr_in)) == -1)
 		printf("Error sending: %s\n", strerror(errno));
+	strncpy(lastMessage,packet,len+4);
 }
 
 void handleWrite(const char* fileName, struct sockaddr_in* cliaddr)
