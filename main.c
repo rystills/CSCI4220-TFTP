@@ -23,6 +23,18 @@ int lastMessageLen;
 struct sockaddr_in cliaddr;
 int sockfd;
 
+void sig_child(int signo) {
+	pid_t pid;
+	int stat;
+
+	while( (pid = waitpid(-1,&stat,WNOHANG)) >0) {
+		printf("Parent sees CHILD PID %d has terminated with status %d.\n",pid,stat);	
+	}
+	//printf("Parent spawned child PID %d\n",pid);
+	//pid = wait(&stat);
+	//printf("child %d terminated\n", pid);
+}
+
 void sendPacket(const char* packet, int len)
 {
 	lastMessageLen = len;
@@ -40,6 +52,8 @@ void sig_timeout(int signo) {
 		fflush(stdout);
 		exit(EXIT_FAILURE);
 	}
+	printf("time out %d, resending message\n",numResends);
+	fflush(stdout);
 	//resend the last message (this also refreshes the alarm cooldown)
 	sendPacket(lastMessage, lastMessageLen);
 }
@@ -134,6 +148,7 @@ void makeData(char* packet, int blockNumber)
 
 void handleWrite(const char* fileName)
 {
+	signal(SIGALRM, sig_timeout);
 	char buffer[MAXLINE];
 	sockfd = initSocket();
 
@@ -146,6 +161,8 @@ void handleWrite(const char* fileName)
 	{
 		socklen_t len;
 		n = recvfrom(sockfd, buffer, MAXLINE, MSG_WAITALL, (struct sockaddr *) &cliaddr, &len);
+		printf("n: %d\n",n);
+		fflush(stdout);
 		printPacket(buffer, n);
 		sendAck(buffer[3]);
 		if (buffer[3] == currBlock)
@@ -175,6 +192,7 @@ void receiveAck(int blockNumber)
 
 void handleRead(const char* fileName)
 {
+	signal(SIGALRM, sig_timeout);
 	char buffer[MAXLINE];
 	sockfd = initSocket();
 
@@ -197,10 +215,9 @@ void handleRead(const char* fileName)
 }
 
 int main(int argc, char **argv) { 
-	signal(SIGALRM, sig_timeout);
 	sockfd = initSocket();
 	char buffer[MAXLINE];
-	
+	signal(SIGCHLD, sig_child);
 	while (true)
 	{
 		socklen_t len = sizeof cliaddr;
