@@ -32,7 +32,7 @@ exit with an error message
 **/
 void exitError(char* str) {
 	perror(str); 
-    exit(EXIT_FAILURE); 
+	exit(EXIT_FAILURE); 
 }
 
 void printPacket(const char* buffer, size_t len)
@@ -60,40 +60,40 @@ void printPacket(const char* buffer, size_t len)
 }
 
 int main(int argc, char **argv) { 
-    int sockfd; 
-    char buffer[MAXLINE]; 
-    struct sockaddr_in servaddr, cliaddr; 
-      
-    //init socket 
-    if ( (sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0 ) exitError("unable to create socket"); 
-    
-    //init server and client sockets
-    memset(&servaddr, 0, sizeof(servaddr)); 
-    memset(&cliaddr, 0, sizeof(cliaddr)); 
-      
-    //assign server properties 
-    servaddr.sin_family = AF_INET;
-    servaddr.sin_addr.s_addr = INADDR_ANY; 
-    servaddr.sin_port = 0; 
-      
-    //bind the socket with the server address 
-    if ( bind(sockfd, (const struct sockaddr *)&servaddr,  sizeof(servaddr)) < 0 ) exitError("unable to bind socket");
+	int sockfd; 
+	char buffer[MAXLINE]; 
+	struct sockaddr_in servaddr, cliaddr; 
+	  
+	//init socket 
+	if ( (sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0 ) exitError("unable to create socket"); 
+	
+	//init server and client sockets
+	memset(&servaddr, 0, sizeof(servaddr)); 
+	memset(&cliaddr, 0, sizeof(cliaddr)); 
+	  
+	//assign server properties 
+	servaddr.sin_family = AF_INET;
+	servaddr.sin_addr.s_addr = INADDR_ANY; 
+	servaddr.sin_port = 0; 
+	  
+	//bind the socket with the server address 
+	if ( bind(sockfd, (const struct sockaddr *)&servaddr,  sizeof(servaddr)) < 0 ) exitError("unable to bind socket");
 
-    //check/get sin_port
-    socklen_t s = sizeof(servaddr);
-    getsockname(sockfd,(struct sockaddr *)&servaddr,&s);
+	//check/get sin_port
+	socklen_t s = sizeof(servaddr);
+	getsockname(sockfd,(struct sockaddr *)&servaddr,&s);
 	unsigned int port = ntohs(servaddr.sin_port);
-    printf("port is: %d\n",port);
+	printf("port is: %d\n",port);
 	fflush(stdout);
-    
-    //handle messages
-    /*socklen_t len, n; 
-    n = recvfrom(sockfd, (char *)buffer, MAXLINE, MSG_WAITALL, ( struct sockaddr *) &cliaddr, &len); 
-    buffer[n] = '\0'; 
-    printf("Client : %s\n", buffer); 
-    sendto(sockfd, (const char *)hello, strlen(hello), MSG_CONFIRM, (const struct sockaddr *) &cliaddr, len); 
-    printf("Hello message sent.\n");*/
-      
+	
+	//handle messages
+	/*socklen_t len, n; 
+	n = recvfrom(sockfd, (char *)buffer, MAXLINE, MSG_WAITALL, ( struct sockaddr *) &cliaddr, &len); 
+	buffer[n] = '\0'; 
+	printf("Client : %s\n", buffer); 
+	sendto(sockfd, (const char *)hello, strlen(hello), MSG_CONFIRM, (const struct sockaddr *) &cliaddr, len); 
+	printf("Hello message sent.\n");*/
+	  
 	//main server loop
 	//temp value; replace this bool with forking later
 	bool midRequest = false;
@@ -101,51 +101,51 @@ int main(int argc, char **argv) {
 	char fileName[MAXLINE];
 	for (;;) {
 		socklen_t len, n;
-		 n = recvfrom(sockfd, (char *)buffer, MAXLINE, MSG_WAITALL, ( struct sockaddr *) &cliaddr, &len); 
-		 buffer[n] = '\0'; 
-		 printf("Client sent this message: ");
+		n = recvfrom(sockfd, (char *)buffer, MAXLINE, MSG_WAITALL, ( struct sockaddr *) &cliaddr, &len); 
+		buffer[n] = '\0'; 
+		printf("Client sent this message: ");
 		printPacket(buffer, n);
-		 printf("\n");
-		 printf("message size is: %d\n",n);
-		 //write filename to variable
-		 if (!midRequest) {
-		 	strcpy(fileName, buffer+2);
-		 }
-		 printf("filename: %s\n",fileName);
-		 if (buffer[1] == 2) {
-		 	//write request
-		 	if (!midRequest) {
+		printf("\n");
+		printf("message size is: %d\n",n);
+		//write filename to variable
+		if (!midRequest) {
+			strcpy(fileName, buffer+2);
+		}
+		printf("filename: %s\n",fileName);
+		if (buffer[1] == 2) {
+			//write request
+			if (!midRequest) {
 			 	//send back initial ACK
-			 	buffer[1] = 4;
-			 	buffer[2] = 0;
-			 	buffer[3] = 0;
-			 	buffer[4] = '\n';
-			 	sendto(sockfd, buffer, 5, MSG_CONFIRM, (const struct sockaddr *) &cliaddr, len);
-		 	} 
-		 	else {
-		 		//write data
-		 		//make sure block # is correct
-		 		if (buffer[3] == lastWrittenBlock + 1) {
-		 			//we haven't written yet
-		 		}
-		 		else {
-		 			//we've already written this block; error?
-		 		}
-		 	}
-		 }
-		 else if (buffer[1] == 1) {
-		 	buffer[1] = 4;
-		 	buffer[2] = 0;
-		 	buffer[3] = 1;
-		 	buffer[4] = '\n';
-		 	//sendto(sockfd,(;
-		 	//read request
-		 }
-		 else {
-		 	//we should not receieve anything else
-		 }
-		 midRequest = true;
+				buffer[1] = 4;
+				buffer[2] = 0;
+				buffer[3] = 0;
+				buffer[4] = '\n';
+				sendto(sockfd, buffer, 5, MSG_CONFIRM, (const struct sockaddr *) &cliaddr, len);
+			} 
+			else {
+				//write data
+				//make sure block # is correct
+				if (buffer[3] == lastWrittenBlock + 1) {
+					//we haven't written yet
+				}
+				else {
+					//we've already written this block; error?
+				}
+			}
+		}
+		else if (buffer[1] == 1) {
+			buffer[1] = 4;
+			buffer[2] = 0;
+			buffer[3] = 1;
+			buffer[4] = '\n';
+			//sendto(sockfd,(;
+			//read request
+		}
+		else {
+			//we should not receieve anything else
+		}
+		midRequest = true;
 	}
 
-    return 0; 
+	return 0; 
 }
