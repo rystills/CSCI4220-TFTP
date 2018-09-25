@@ -96,6 +96,7 @@ int main(int argc, char **argv) {
 	//temp value; replace this bool with forking later
 	bool midRequest = false;
 	int lastWrittenBlock = 0;
+	int opcode = -1;
 	char fileName[MAXLINE];
 	for (;;) {
 		socklen_t len, n;
@@ -110,7 +111,9 @@ int main(int argc, char **argv) {
 		}
 		printf("filename: %s\n",fileName);
 
-		if (buffer[1] == 2) {
+		if (buffer[1] == 2 || opcode == 2) {
+			opcode = 2;
+			printf("handling WRQ\n");
 			//write request
 			if (!midRequest) {
 				//send back initial ACK
@@ -125,9 +128,7 @@ int main(int argc, char **argv) {
 				if (buffer[3] == lastWrittenBlock + 1) {
 					//we haven't written yet
 					//simulate write with terminal output
-					printf("writing: ");
-					for (int i = 4; buffer[i] != 0; printf("%s",strchr(&buffer[i],0)),++i);
-					printf("\n");
+					printf("writing: %s\n",buffer+4);
 					++lastWrittenBlock;
 
 					//send an ACK
@@ -136,16 +137,20 @@ int main(int argc, char **argv) {
 					buffer[3] = lastWrittenBlock;
 					
 					int sendVal = sendto(sockfd, buffer, 4, 0, (const struct sockaddr *) &cliaddr, len);
-					if (sendVal == -1) {
+					if (sendVal == -1)
 						printf("Error sending: %s\n", strerror(errno));
-					}
+					else
+						printf("ACK sent!");
 				}
 				else {
 					//we've already written this block; error?
+					printf("Error: just received block %d, but our last written block is %d\n",buffer[3],lastWrittenBlock);
 				}
 			}
 		}
-		else if (buffer[1] == 1) {
+		else if (buffer[1] == 1 || opcode == 1) {
+			opcode = 1;
+			printf("handling RRQ\n");
 			buffer[1] = 4;
 			buffer[2] = 0;
 			buffer[3] = 1;
@@ -154,9 +159,11 @@ int main(int argc, char **argv) {
 			//read request
 		}
 		else {
+			printf("Error: request is neither RRQ nor WRQ; instead it is %d\n",buffer[1]);
 			//we should not recieve anything else
 		}
 		midRequest = true;
+		fflush(stdout);
 	}
 
 	return 0; 
