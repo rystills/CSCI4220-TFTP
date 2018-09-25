@@ -64,13 +64,14 @@ void printPacket(const char* buffer, size_t len)
 	}
 }
 
-void initSocket(int* sockfd)
+int initSocket()
 {
 	struct sockaddr_in servaddr;
 
 	socklen_t s = sizeof servaddr;
 	//init socket
-	if ((*sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
+	int sockfd;
+	if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
 		exitError("unable to create socket"); 
 	
 	//init server and client sockets
@@ -82,13 +83,15 @@ void initSocket(int* sockfd)
 	servaddr.sin_port = 0;
 	
 	//bind the socket with the server address
-	if (bind(*sockfd, (const struct sockaddr *) &servaddr, s) < 0)
+	if (bind(sockfd, (const struct sockaddr *) &servaddr, s) < 0)
 		exitError("unable to bind socket");
 
 	//check/get sin_port
-	getsockname(*sockfd, (struct sockaddr *) &servaddr,&s);
+	getsockname(sockfd, (struct sockaddr *) &servaddr,&s);
 	printf("port is: %d\n", ntohs(servaddr.sin_port));
 	fflush(stdout);
+
+	return sockfd;
 }
 
 void sendAck(int blockNumber, int sockfd, struct sockaddr_in* cliaddr)
@@ -143,9 +146,7 @@ void handleWrite(const char* fileName, struct sockaddr_in* cliaddr)
 void handleRead(const char* fileName, struct sockaddr_in* cliaddr)
 {
 	char buffer[MAXLINE];
-	int sockfd;
-	struct sockaddr_in servaddr;
-	initSocket(&sockfd);
+	int sockfd = initSocket();
 
 	FILE* file = fopen(fileName, "rb");
 	char data[512];
@@ -162,10 +163,8 @@ void handleRead(const char* fileName, struct sockaddr_in* cliaddr)
 }
 
 int main(int argc, char **argv) { 
-	int sockfd;
+	int sockfd = initSocket();
 	char buffer[MAXLINE];
-	
-	initSocket(&sockfd);
 	
 	while (true)
 	{
