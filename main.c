@@ -35,6 +35,11 @@ void exitError(char* str) {
 	exit(EXIT_FAILURE); 
 }
 
+/**
+print the contents of the buffer containing packet info
+@param buffer: the paket buffer to print
+@param len: the buffer size
+**/
 void printPacket(const char* buffer, size_t len)
 {
 	switch (buffer[1])
@@ -112,6 +117,7 @@ int main(int argc, char **argv) {
 			strcpy(fileName, buffer+2);
 		}
 		printf("filename: %s\n",fileName);
+
 		if (buffer[1] == 2) {
 			//write request
 			if (!midRequest) {
@@ -119,8 +125,10 @@ int main(int argc, char **argv) {
 				buffer[1] = 4;
 				buffer[2] = 0;
 				buffer[3] = 0;
-				buffer[4] = '\n';
-				sendto(sockfd, buffer, 5, MSG_CONFIRM, (const struct sockaddr *) &cliaddr, len);
+				int sendVal = sendto(sockfd, buffer, 4, MSG_CONFIRM, (const struct sockaddr *) &cliaddr, len);
+				if (sendVal == -1) {
+					printf("Error sending: %s\n", strerror(errno));
+				}
 			} 
 			else {
 				//write data
@@ -137,7 +145,7 @@ int main(int argc, char **argv) {
 			buffer[1] = 4;
 			buffer[2] = 0;
 			buffer[3] = 1;
-			buffer[4] = '\n';
+			buffer[4] = '\0';
 			//sendto(sockfd,(;
 			//read request
 		}
