@@ -106,6 +106,14 @@ void sendAck(int blockNumber, int sockfd, struct sockaddr_in* cliaddr)
 	strncpy(lastMessage,ack,4);
 }
 
+void makeData(char* packet, int blockNumber)
+{
+	packet[0] = 0;
+	packet[1] = 3;
+	packet[2] = 0;
+	packet[3] = blockNumber;
+}
+
 void sendData(const char* data, int len, int blockNumber, int sockfd, struct sockaddr_in* cliaddr)
 {
 	printf("Sending DATA %d (len %d)\n", blockNumber, len);
@@ -119,6 +127,12 @@ void sendData(const char* data, int len, int blockNumber, int sockfd, struct soc
 	if (sendto(sockfd, packet, len+4, 0, (const struct sockaddr *) cliaddr, sizeof (struct sockaddr_in)) == -1)
 		printf("Error sending: %s\n", strerror(errno));
 	strncpy(lastMessage,packet,len+4);
+}
+
+void sendPacket(const char* packet, int len, int sockfd, struct sockaddr_in* cliaddr)
+{
+	if (sendto(sockfd, packet, len, 0, (const struct sockaddr *) cliaddr, sizeof (struct sockaddr_in)) == -1)
+		printf("Error sending: %s\n", strerror(errno));
 }
 
 void handleWrite(const char* fileName, struct sockaddr_in* cliaddr)
@@ -148,20 +162,34 @@ void handleWrite(const char* fileName, struct sockaddr_in* cliaddr)
 	exit (0);
 }
 
+void receiveAck(int blockNumber, int sockfd, struct sockaddr_in* cliaddr)
+{
+	socklen_t len = sizeof *cliaddr;
+	char data[4];
+	do
+	{
+		alarm(1);
+		recvfrom(sockfd, data, 4, MSG_WAITALL, (struct sockaddr *) cliaddr, &len);
+	}
+	while (data[1] != 4 || data[3] != blockNumber);
+}
+
 void handleRead(const char* fileName, struct sockaddr_in* cliaddr)
 {
 	char buffer[MAXLINE];
 	int sockfd = initSocket();
 
 	FILE* file = fopen(fileName, "rb");
-	char data[512];
-	size_t num_read;
+	size_t num_read = 512;
 	int blockNumber = 1;
-	do
+	for (int blockNumber = 1; num_read == 512; receiveAck(blockNumber++, sockfd, cliaddr))
 	{
-		num_read = fread(data, sizeof(char), 512, file);
-		sendData(data, num_read, blockNumber++, sockfd, cliaddr);
-	} while (num_read == 512);
+		// Read up to 512 bytes from file and then send to client
+		char data[512+4];
+		makeData(data, blockNumber);
+		num_read = fread(data+4, sizeof(char), 512, file);
+		sendPacket(data, num_read+4, sockfd, cliaddr);
+	}
 
 	close(sockfd);
 	exit(0);
