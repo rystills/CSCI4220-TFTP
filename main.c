@@ -35,6 +35,30 @@ void exitError(char* str) {
     exit(EXIT_FAILURE); 
 }
 
+void printPacket(const char* buffer, size_t len)
+{
+	switch (buffer[1])
+	{
+		case 1:
+			printf("RRQ|%s|%s\n", buffer+2, strchr(buffer+2, 0)+1);
+			break;
+		case 2:
+			printf("WRQ|%s|%s\n", buffer+2, strchr(buffer+2, 0)+1);
+			break;
+		case 3:
+			printf("DATA|%d|%.*s\n", buffer[3], (int) len-4, buffer+4);
+			break;
+		case 4:
+			printf("ACK|%d\n", buffer[3]);
+			break;
+		case 5:
+			printf("ERROR|%d|%s\n", buffer[3], buffer+4);
+			break;
+		default:
+			printf("Invalid packet\n");
+	}
+}
+
 int main(int argc, char **argv) { 
     int sockfd; 
     char buffer[MAXLINE]; 
@@ -80,9 +104,7 @@ int main(int argc, char **argv) {
 		 n = recvfrom(sockfd, (char *)buffer, MAXLINE, MSG_WAITALL, ( struct sockaddr *) &cliaddr, &len); 
 		 buffer[n] = '\0'; 
 		 printf("Client sent this message: ");
-		 for (int i = 0; i < n; ++i) {
-		 	printf("%d,",buffer[i]);
-		 } 
+		printPacket(buffer, n);
 		 printf("\n");
 		 printf("message size is: %d\n",n);
 		 //write filename to variable
