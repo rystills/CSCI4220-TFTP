@@ -13,6 +13,7 @@
 #include <sys/select.h>
 #include <errno.h>
 #include <stdbool.h>
+#include <inttypes.h>
 
 #define MAXLINE 1024
 
@@ -126,11 +127,11 @@ int initSocket()
 	return sockfd;
 }
 
-void sendAck(unsigned int blockNumber)
+void sendAck(unsigned int blockdigit1, unsigned int blockdigit2)
 {
 	lastMessageLen = 4;
-	printf("Sending ACK %u\n", blockNumber);
-	char ack[4] = {0,4,0,blockNumber};
+	//printf("Sending ACK %u\n", blockNumber);
+	char ack[4] = {0,4,blockdigit1,blockdigit2};
 	if (sendto(sockfd, ack, 4, 0, (const struct sockaddr *) &cliaddr, sizeof (struct sockaddr_in)) == -1)
 		printf("Error sending: %s\n", strerror(errno));
 	strncpy(lastMessage,ack,4);
@@ -156,7 +157,7 @@ void handleWrite(const char* fileName)
 	sockfd = initSocket();
 
 	//send back initial ACK
-	sendAck(0);
+	sendAck(0,0);
 
 	unsigned int currBlock = 1;
 	socklen_t n;
@@ -167,7 +168,7 @@ void handleWrite(const char* fileName)
 		printf("n: %d\n",n);
 		fflush(stdout);
 		printPacket(buffer, n);
-		sendAck((unsigned int)buffer[3] | (unsigned int)buffer[2]<<8);
+		sendAck(buffer[2],buffer[3]);
 		printf("current ack is %u\n",(unsigned int)buffer[3] | (unsigned int)buffer[2]<<8);
 		if (buffer[3] | (unsigned int)buffer[2]<<8 == currBlock)
 		{
@@ -175,8 +176,12 @@ void handleWrite(const char* fileName)
 			//write the contents to the file
 			//fprintf(fp,%s",buffer+4);
 			++currBlock;
+			printf("curBlock is %d\n",currBlock);
+			if (currBlock == 148) {
+				printf("ack equivalent of 148 is %" PRIu16 "\n",buffer[3]);
+			}
 		}
-	} while (n >= 516);
+	} while (n == 516);
 	//close socket and file pointers
 	close(sockfd);
 	fclose(fp);
