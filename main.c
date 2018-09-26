@@ -148,6 +148,9 @@ void makeData(char* packet, int blockNumber)
 
 void handleWrite(const char* fileName)
 {
+	//get a pointer to the file, creating it if it doesn't exist
+	FILE *fp = fopen(fileName, "ab+");
+
 	signal(SIGALRM, sig_timeout);
 	char buffer[MAXLINE];
 	sockfd = initSocket();
@@ -169,11 +172,16 @@ void handleWrite(const char* fileName)
 		if (buffer[3] | (unsigned int)buffer[2]<<8 == currBlock)
 		{
 			printf("writing: %s\n",buffer+4);
+			//write the contents to the file
+			//fprintf(fp,%s",buffer+4);
 			++currBlock;
 		}
 	} while (n >= 516);
+	//close socket and file pointers
 	close(sockfd);
-	//turn off the timeout alarm
+	fclose(fp);
+
+	//turn off the timeout alarm and exit
 	alarm(0);
 	exit (0);
 }
