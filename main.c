@@ -150,7 +150,7 @@ void makeData(char* packet, int blockNumber)
 void handleWrite(const char* fileName)
 {
 	//get a pointer to the file, creating it if it doesn't exist
-	FILE *fp = fopen(fileName, "ab+");
+	FILE *fp = fopen(fileName, "ab");
 
 	signal(SIGALRM, sig_timeout);
 	char buffer[MAXLINE];
@@ -174,7 +174,7 @@ void handleWrite(const char* fileName)
 		{
 			printf("writing: %s\n",buffer+4);
 			//write the contents to the file
-			//fprintf(fp,%s",buffer+4);
+			fwrite(buffer+4, sizeof (char), n-4, fp);
 			++currBlock;
 			printf("curBlock is %d\n",currBlock);
 			if (currBlock == 148) {
