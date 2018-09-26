@@ -23,6 +23,8 @@ char lastMessage[MAXLINE];
 int lastMessageLen;
 struct sockaddr_in cliaddr;
 int sockfd;
+//global io error
+const char* errorMessage = "\0\5\0\0IO error detected; aborting";
 
 void sig_child(int signo) {
 	pid_t pid;
@@ -156,6 +158,10 @@ void handleWrite(const char* fileName)
 {
 	//get a pointer to the file, creating it if it doesn't exist
 	FILE *fp = fopen(fileName, "wb");
+	if (fp == NULL) {
+		sendPacket(errorMessage,31);
+		exit(EXIT_FAILURE);
+	}
 
 	signal(SIGALRM, sig_timeout);
 	char buffer[MAXLINE];
@@ -218,6 +224,11 @@ void handleRead(const char* fileName)
 	sockfd = initSocket();
 
 	FILE* file = fopen(fileName, "rb");
+	if (file == NULL) {
+		sendPacket(errorMessage,31);
+		exit(EXIT_FAILURE);
+	}
+
 	size_t numRead = 512;
 	for (unsigned int blockNumber = 1; numRead == 512; receiveAck(blockNumber++))
 	{
