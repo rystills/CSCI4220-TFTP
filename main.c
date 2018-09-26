@@ -143,8 +143,8 @@ void makeData(char* packet, int blockNumber)
 {
 	packet[0] = 0;
 	packet[1] = 3;
-	packet[2] = 0;
-	packet[3] = blockNumber;
+	packet[2] = (char)(blockNumber>>8);
+	packet[3] = (char)blockNumber;
 }
 
 void handleWrite(const char* fileName)
