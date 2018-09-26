@@ -87,7 +87,7 @@ void printPacket(const char* buffer, size_t len)
 			printf("DATA|%d|%.*s\n", buffer[3] | (unsigned int)buffer[2]<<8, (int) len-4, buffer+4);
 			break;
 		case 4:
-			printf("ACK|%d\n", buffer[3] | (unsigned int)buffer[2]<<8);
+			printf("ACK|%u\n", buffer[3] | (unsigned int)buffer[2]<<8);
 			break;
 		case 5:
 			printf("ERROR|%d|%s\n", buffer[3] | (unsigned int)buffer[2]<<8, buffer+4);
@@ -139,7 +139,7 @@ void sendAck(unsigned int blockdigit1, unsigned int blockdigit2)
 	alarm(1);
 }
 
-void makeData(char* packet, int blockNumber)
+void makeData(char* packet, unsigned int blockNumber)
 {
 	packet[0] = 0;
 	packet[1] = 3;
@@ -150,7 +150,7 @@ void makeData(char* packet, int blockNumber)
 void handleWrite(const char* fileName)
 {
 	//get a pointer to the file, creating it if it doesn't exist
-	FILE *fp = fopen(fileName, "ab");
+	FILE *fp = fopen(fileName, "wb");
 
 	signal(SIGALRM, sig_timeout);
 	char buffer[MAXLINE];
@@ -191,7 +191,7 @@ void handleWrite(const char* fileName)
 	exit (0);
 }
 
-void receiveAck(int blockNumber)
+void receiveAck(unsigned int blockNumber)
 {
 	socklen_t len = sizeof cliaddr;
 	char data[4];
@@ -199,6 +199,7 @@ void receiveAck(int blockNumber)
 	{
 		alarm(1);
 		recvfrom(sockfd, data, 4, MSG_WAITALL, (struct sockaddr *) &cliaddr, &len);
+		printPacket(data, 4);
 	}
 	while (data[1] != 4 || data[3] != blockNumber);
 	alarm(0);
@@ -212,13 +213,14 @@ void handleRead(const char* fileName)
 
 	FILE* file = fopen(fileName, "rb");
 	size_t numRead = 512;
-	for (int blockNumber = 1; numRead == 512; receiveAck(blockNumber++))
+	for (unsigned int blockNumber = 1; numRead == 512; receiveAck(blockNumber++))
 	{
 		// Read up to 512 bytes from file and then send to client
 		char data[512+4];
 		makeData(data, blockNumber);
 		numRead = fread(data+4, sizeof(char), 512, file);
 		memcpy(lastMessage, data, numRead+4);
+		lastMessageLen = numRead+4;
 		sendPacket(data, numRead+4);
 	}
 
