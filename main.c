@@ -68,6 +68,11 @@ void exitError(char* str) {
 	exit(EXIT_FAILURE); 
 }
 
+unsigned int packetBlockNumber(const char* buffer)
+{
+	return *((unsigned char*) buffer+3) | *((unsigned char*) buffer+2)<<8;
+}
+
 /**
 print the contents of the buffer containing packet info
 @param buffer: the paket buffer to print
@@ -84,13 +89,13 @@ void printPacket(const char* buffer, size_t len)
 			printf("WRQ|%s|%s\n", buffer+2, strchr(buffer+2, 0)+1);
 			break;
 		case 3:
-			printf("DATA|%d|%.*s\n", buffer[3] | (unsigned int)buffer[2]<<8, (int) len-4, buffer+4);
+			printf("DATA|%d|%.*s\n", packetBlockNumber(buffer), (int) len-4, buffer+4);
 			break;
 		case 4:
-			printf("ACK|%u\n", buffer[3] | (unsigned int)buffer[2]<<8);
+			printf("ACK|%u\n", packetBlockNumber(buffer));
 			break;
 		case 5:
-			printf("ERROR|%d|%s\n", buffer[3] | (unsigned int)buffer[2]<<8, buffer+4);
+			printf("ERROR|%d|%s\n", packetBlockNumber(buffer), buffer+4);
 			break;
 		default:
 			printf("Invalid packet\n");
@@ -169,8 +174,8 @@ void handleWrite(const char* fileName)
 		fflush(stdout);
 		printPacket(buffer, n);
 		sendAck(buffer[2],buffer[3]);
-		printf("current ack is %u\n",(unsigned int)buffer[3] | (unsigned int)buffer[2]<<8);
-		if (buffer[3] | (unsigned int)buffer[2]<<8 == currBlock)
+		printf("current ack is %u\n",packetBlockNumber(buffer));
+		if (packetBlockNumber(buffer) == currBlock)
 		{
 			printf("writing: %s\n",buffer+4);
 			//write the contents to the file
@@ -199,9 +204,10 @@ void receiveAck(unsigned int blockNumber)
 	{
 		alarm(1);
 		recvfrom(sockfd, data, 4, MSG_WAITALL, (struct sockaddr *) &cliaddr, &len);
+		printf("blockNumber: %u\t", blockNumber);
 		printPacket(data, 4);
 	}
-	while (data[1] != 4 || data[3] != blockNumber);
+	while (data[1] != 4 || packetBlockNumber(data) != blockNumber);
 	alarm(0);
 }
 
