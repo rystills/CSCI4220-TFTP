@@ -33,9 +33,6 @@ void sig_child(int signo) {
 	while( (pid = waitpid(-1,&stat,WNOHANG)) >0) {
 		printf("Parent sees CHILD PID %d has terminated with status %d.\n",pid,stat);	
 	}
-	//printf("Parent spawned child PID %d\n",pid);
-	//pid = wait(&stat);
-	//printf("child %d terminated\n", pid);
 }
 
 void sendPacket(const char* packet, int len)
@@ -50,7 +47,6 @@ void sendPacket(const char* packet, int len)
 void sig_timeout(int signo) {
 	if (++numResends == 10) {
 		//we've timed out! cleanup and leave
-		//close(3);
 		printf("Timed out, resends done\n");
 		fflush(stdout);
 		exit(EXIT_FAILURE);
@@ -137,7 +133,6 @@ int initSocket()
 void sendAck(unsigned int blockdigit1, unsigned int blockdigit2)
 {
 	lastMessageLen = 4;
-	//printf("Sending ACK %u\n", blockNumber);
 	char ack[4] = {0,4,blockdigit1,blockdigit2};
 	if (sendto(sockfd, ack, 4, 0, (const struct sockaddr *) &cliaddr, sizeof (struct sockaddr_in)) == -1)
 		printf("Error sending: %s\n", strerror(errno));
